@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA Project - Interactive Visualization</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .container {
+            padding: 20px;
+        }
+        .dsa-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .dsa-title {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        .visualization-area {
+            min-height: 300px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .btn-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            white-space: nowrap;
+        }
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-custom:active {
+            transform: translateY(0);
+        }
+        .input-group-custom {
+            margin: 5px 0;
+        }
+        .form-control {
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            padding: 8px 12px;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .node {
+            fill: #667eea;
+            stroke: #fff;
+            stroke-width: 2px;
+            cursor: pointer;
+        }
+        .node:hover {
+            fill: #764ba2;
+        }
+        .link {
+            stroke: #999;
+            stroke-width: 2px;
+        }
+        .highlight {
+            fill: #ff6b6b !important;
+            stroke: #ff4757 !important;
+        }
+        .linked-list-node {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 15px 25px;
+            margin: 10px;
+            border-radius: 10px;
+            position: relative;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .linked-list-arrow {
+            display: inline-block;
+            font-size: 24px;
+            color: #667eea;
+            margin: 0 5px;
+            font-weight: bold;
+        }
+        .queue-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            margin: 5px;
+            border-radius: 8px;
+            display: inline-block;
+            animation: slideIn 0.3s;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .hash-table {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .hash-bucket {
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 70px;
+            transition: all 0.3s;
+        }
+        .hash-bucket.active {
+            border-color: #667eea;
+            background: #e8e9ff;
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+        .info-box {
+            background: #e8e9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .toast {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+            animation: slideInRight 0.3s;
+            border-left: 4px solid #667eea;
+        }
+        .toast.success {
+            border-left-color: #28a745;
+        }
+        .toast.error {
+            border-left-color: #dc3545;
+        }
+        .toast.info {
+            border-left-color: #17a2b8;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .clear-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        .clear-btn:hover {
+            background: #c82333;
+        }
+
+        #trieSvg {
+    cursor: move;
+}
+.zoom-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 5px;
+    z-index: 10;
+}
+.zoom-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.zoom-btn:hover {
+    background: #764ba2;
+}
+    </style>
+</head>
+<body>
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <div class="container">
+        <div class="text-center text-white mb-4">
+            <h1><i class="fas fa-project-diagram"></i> DSA Project - Interactive Visualization</h1>
+            <p>Visualize Data Structures & Algorithms in Real-Time</p>
+        </div>
+
+        <!-- Hash Map Section -->
+        <div class="dsa-section">
+            <div class="section-header">
+                <h2 class="dsa-title"><i class="fas fa-table"></i> Hash Map (unordered_map)</h2>
+                <button class="clear-btn" onclick="clearHashMap()">Clear All</button>
+            </div>
+            <div class="controls">
+                <input type="text" id="userId" class="form-control" placeholder="User ID" style="width: 180px;">
+                <input type="text" id="userName" class="form-control" placeholder="User Name" style="width: 180px;">
+                <button class="btn btn-custom" onclick="addUser()"><i class="fas fa-plus"></i> Add</button>
+                <button class="btn btn-custom" onclick="findUser()"><i class="fas fa-search"></i> Find</button>
+                <button class="btn btn-custom" onclick="removeUser()"><i class="fas fa-trash"></i> Remove</button>
+            </div>
+            <div class="help-text">Operations: O(1) average time complexity</div>
+            <div id="hashMapViz" class="visualization-area">
+                <div class="hash-table" id="hashTable">
+                    <p class="text-muted text-center">Hash Map is empty. Add users to see visualization.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trie Section -->
+        <div class="dsa-section">
+            <div class="section-header">
+                <h2 class="dsa-title"><i class="fas fa-sitemap"></i> Trie (Prefix Tree)</h2>
+                <button class="clear-btn" onclick="clearTrie()">Clear All</button>
+            </div>
+            <div class="controls">
+                <input type="text" id="trieWord" class="form-control" placeholder="Location Name" style="width: 200px;">
+                <button class="btn btn-custom" onclick="insertTrie()"><i class="fas fa-plus"></i> Insert</button>
+                <input type="text" id="triePrefix" class="form-control" placeholder="Search Prefix" style="width: 200px;">
+                <button class="btn btn-custom" onclick="searchTrie()"><i class="fas fa-search"></i> Search</button>
+            </div>
+            <div class="help-text">Insert words (letters only) to build the Trie, then search by prefix for auto-complete. Red nodes indicate end of words. Use mouse to pan/zoom!</div>
+<div id="trieViz" class="visualization-area" style="height: 600px; position: relative;">
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()" title="Zoom In"><i class="fas fa-plus"></i></button>
+        <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out"><i class="fas fa-minus"></i></button>
+        <button class="zoom-btn" onclick="resetZoom()" title="Reset View"><i class="fas fa-home"></i></button>
+    </div>
+    <svg id="trieSvg" width="100%" height="100%" style="display: none;"></svg>
+                <p class="text-muted text-center" id="trieEmpty" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%;">Trie is empty. Insert words to see visualization.</p>
+            </div>
+        </div>
+
+        <!-- Graph + Dijkstra Section -->
+        <div class="dsa-section">
+            <div class="section-header">
+                <h2 class="dsa-title"><i class="fas fa-project-diagram"></i> Graph + Dijkstra's Algorithm</h2>
+                <button class="clear-btn" onclick="clearGraph()">Clear All</button>
+            </div>
+            <div class="controls">
+                <input type="text" id="graphLoc" class="form-control" placeholder="Location Name" style="width: 150px;">
+                <button class="btn btn-custom" onclick="addGraphLocation()"><i class="fas fa-plus"></i> Add Location</button>
+            </div>
+            <div class="controls">
+                <input type="text" id="edgeFrom" class="form-control" placeholder="From Location" style="width: 130px;">
+                <input type="text" id="edgeTo" class="form-control" placeholder="To Location" style="width: 130px;">
+                <input type="number" id="edgeWeight" class="form-control" placeholder="Distance" style="width: 100px;" min="1">
+                <button class="btn btn-custom" onclick="addEdge()"><i class="fas fa-link"></i> Add Edge</button>
+            </div>
+            <div class="controls">
+                <input type="text" id="dijkstraFrom" class="form-control" placeholder="Source" style="width: 130px;">
+                <input type="text" id="dijkstraTo" class="form-control" placeholder="Destination" style="width: 130px;">
+                <button class="btn btn-custom" onclick="findShortestPath()"><i class="fas fa-route"></i> Find Shortest Path</button>
+            </div>
+            <div class="help-text">Add locations first, then connect them with edges (bidirectional). Use Dijkstra's to find shortest path. Drag nodes to rearrange!</div>
+            <div id="graphViz" class="visualization-area" style="height: 500px;">
+                <p class="text-muted text-center">Graph is empty. Add locations and edges to see visualization.</p>
+            </div>
+        </div>
+
+        <!-- Linked List Section -->
+        <div class="dsa-section">
+            <div class="section-header">
+                <h2 class="dsa-title"><i class="fas fa-list"></i> Linked List (Bus Routes)</h2>
+                <button class="clear-btn" onclick="clearRoutes()">Clear All</button>
+            </div>
+            <div class="controls">
+                <input type="text" id="routeName" class="form-control" placeholder="Route Name" style="width: 150px;">
+                <button class="btn btn-custom" onclick="addRoute()"><i class="fas fa-plus"></i> Add Route</button>
+            </div>
+            <div class="controls">
+                <select id="routeSelect" class="form-control" style="width: 200px;">
+                    <option value="">Select Route First</option>
+                </select>
+                <input type="text" id="stopName" class="form-control" placeholder="Stop Name" style="width: 150px;">
+                <button class="btn btn-custom" onclick="addStop()"><i class="fas fa-map-marker-alt"></i> Add Stop</button>
+                <button class="btn btn-custom" onclick="deleteStop()"><i class="fas fa-trash"></i> Delete Stop</button>
+                <button class="btn btn-custom" onclick="reverseRoute()"><i class="fas fa-exchange-alt"></i> Reverse Route</button>
+            </div>
+            <div class="help-text">Create a route first, then add stops to build the linked list</div>
+            <div id="linkedListViz" class="visualization-area">
+                <p class="text-muted text-center">No routes found. Create a route to see visualization.</p>
+            </div>
+        </div>
+
+        <!-- Queue Section -->
+        <div class="dsa-section">
+            <div class="section-header">
+                <h2 class="dsa-title"><i class="fas fa-stream"></i> Queue (FIFO)</h2>
+                <button class="clear-btn" onclick="clearQueue()">Clear All</button>
+            </div>
+            <div class="controls">
+                <input type="text" id="queueItem" class="form-control" placeholder="Item Name" style="width: 200px;">
+                <button class="btn btn-custom" onclick="enqueue()"><i class="fas fa-plus"></i> Enqueue</button>
+                <button class="btn btn-custom" onclick="dequeue()"><i class="fas fa-minus"></i> Dequeue</button>
+                <button class="btn btn-custom" onclick="processAll()"><i class="fas fa-play"></i> Process All</button>
+            </div>
+            <div class="help-text">Queue follows FIFO (First In First Out) - Items are processed in the order they were added</div>
+            <div id="queueViz" class="visualization-area">
+                <div style="text-align: center; padding: 20px;">
+                    <div style="display: inline-block; text-align: left;">
+                        <div style="margin-bottom: 10px;"><strong>Queue (Front → Rear):</strong></div>
+                        <div id="queueDisplay" style="min-height: 100px;">
+                            <p class="text-muted">Queue is empty. Add items to see visualization.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="processedItems" style="margin-top: 20px;">
+                <h5>Processed Items (FIFO Order):</h5>
+                <div id="processedDisplay"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dsa-visualization.js"></script>
+</body>
+</html>
